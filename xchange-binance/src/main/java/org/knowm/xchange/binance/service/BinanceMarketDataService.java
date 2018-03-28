@@ -1,6 +1,8 @@
 package org.knowm.xchange.binance.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,6 +10,7 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.binance.BinanceAdapters;
 import org.knowm.xchange.binance.dto.marketdata.BinanceAggTrades;
 import org.knowm.xchange.binance.dto.marketdata.BinanceOrderbook;
+import org.knowm.xchange.binance.dto.marketdata.BinanceTicker24h;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -18,6 +21,8 @@ import org.knowm.xchange.dto.marketdata.Trades.TradeSortType;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.exceptions.ExchangeException;
 import org.knowm.xchange.service.marketdata.MarketDataService;
+import org.knowm.xchange.service.marketdata.params.CurrencyPairsParam;
+import org.knowm.xchange.service.marketdata.params.Params;
 
 public class BinanceMarketDataService extends BinanceMarketDataServiceRaw implements MarketDataService {
 
@@ -52,6 +57,28 @@ public class BinanceMarketDataService extends BinanceMarketDataServiceRaw implem
   public Ticker getTicker(CurrencyPair pair, Object... args) throws IOException {
 
     return ticker24h(pair).toTicker();
+  }
+
+  /**
+   * @param params which currency pairs to fetch. Will return all tickers if this is null or empty.
+   */
+  @Override
+  public List<Ticker> getTickers(Params params, Object... args) throws IOException {
+    Collection<CurrencyPair> pairs = null;
+    if (params != null && params instanceof CurrencyPairsParam) {
+      pairs = ((CurrencyPairsParam) params).getCurrencyPairs();
+    }
+    if (pairs == null) {
+      pairs = new ArrayList<>();
+    }
+    List<Ticker> tickers = new ArrayList<>();
+    for (BinanceTicker24h rawTicker : ticker24h()) {
+      Ticker ticker = rawTicker.toTicker();
+      if (pairs.isEmpty() || pairs.contains(ticker.getCurrencyPair())) {
+        tickers.add(ticker);
+      }
+    }
+    return tickers;
   }
 
   /**
